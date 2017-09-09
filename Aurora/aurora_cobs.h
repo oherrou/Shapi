@@ -22,6 +22,7 @@
  * \author  Nyuu & Red
  * \version 1.0.0
  * \date    09 Sept 2017
+ * \info    About COBS https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
  */
 
 #ifndef __AURORA_COBS_H
@@ -40,12 +41,37 @@
 /* STRUCTURES & UNIONS                                                       */
 /* ========================================================================= */
 
+#define COBS_MAX_PACKET_SIZE 256
 
 /* ========================================================================= */
 /* PROTOTYPES                                                                */
 /* ========================================================================= */
+/*!
+ * \brief      Function to encode a buffer with COBS style
+ * \param[in]  ptr      Pointer to the input buffer
+ * \param[in]  length   size of the input buffer
+ * \param[out] dst      Pointer to the destination that will be encoded with COBS style
+ * \return     None.
+ */
+void AUR_cobs_EncodeBuffer(const uint8_t *ptr, uint8_t length, uint8_t *dst);
 
-void AUR_cobsStuff(const uint8_t *ptr, size_t length, uint8_t *dst);
-void AUR_cobsUnStuff(const uint8_t *ptr, size_t length, uint8_t *dst);
+/*!
+ * \brief      Function to decode a COBS style buffer
+ * \param[in]  pSerial          Pointer to a Serial structure (read data from ringbuffer)
+ * \param[out] pOutputBuffer    Pointer to the outputbuffer
+ * \param[out] length           the length of the outputbuffer
+ * \return     ErrorStatus, ERROR if the data could not be send, SUCCESS otherwise
+ */
+ErrorStatus AUR_cobs_DecodeBuffer(Serial_t *pSerial, uint8_t *pOutputBuffer, uint8_t *length);
+
+
+/*!
+ * \brief      Function to unstuff/decode data from COBS
+ * \param[in]  ptr      Pointer to the input buffer encoded as COBS
+ * \param[in]  length   size of the input buffer
+ * \param[out] dst      Pointer to the destination that will be decoded with COBS style
+ * \return     None.
+ */
+void AUR_cobs_UnStuff(const uint8_t *ptr, uint8_t length, uint8_t *dst);
 
 #endif /* __AURORA_COBS_H */

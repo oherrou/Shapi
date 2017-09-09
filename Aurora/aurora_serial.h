@@ -35,18 +35,20 @@
 #include "aurora_ringbuffer.h"
 #include "aurora_uart.h"
 #include "aurora_tools.h"
-#include "aurora_cobs.h"
 #include "stdio.h"
 
 /* ========================================================================= */
 /* STRUCTURES & UNIONS                                                       */
 /* ========================================================================= */
 
+#define SERIAL_MAX_PACKET_SIZE 254
+
 /*! Handle a Serial                                                         */
 typedef struct Serial_s{
     UARTx_t            *pUART;          /*!< Pointer to the UARTx_t structure */
     ringBuffer_t       *pRingBufferTX;  /*!< Pointer to the ringBuffer_t structure */
     ringBuffer_t       *pRingBufferRX;  /*!< Pointer to the ringBuffer_t structure */
+    uint8_t             _isPacketWaiting;
 } Serial_t;
 
 /* ========================================================================= */
@@ -93,12 +95,11 @@ ErrorStatus AUR_serial_rawSendString(Serial_t *pSerial, uint8_t *pString);
 
 /*!
  * \brief      Function to send a cobs data
- * \param[in]  pSerial  Pointer to a Serial
- * \param[in]  pCobs    Pointer to Cobs data to send
- * \param[in]  length   length of the data buffer
+ * \param[in]  pSerial      Pointer to a Serial
+ * \param[in]  pCOBSBuffer  Pointer to Cobs data to send
  * \return     ErrorStatus, ERROR if the data could not be send, SUCCESS otherwise
  */
-ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pBuffer, uint8_t length);
+ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pCOBSBuffer);
 
 /*!
  * \brief      Function to send a raw integer in a string
@@ -109,5 +110,8 @@ ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pBuffer, uint8_t len
  */
 ErrorStatus AUR_serial_rawSendInteger(Serial_t *pSerial, int32_t value);
 
+
+void AUR_serial_SetPacketWaiting(Serial_t *pSerial, uint8_t ready);
+uint8_t AUR_serial_IsPacketWaiting(Serial_t *pSerial);
 
 #endif /* __AURORA_SERIAL_H */

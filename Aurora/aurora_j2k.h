@@ -16,93 +16,69 @@
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>.     */
 /* ========================================================================= */
 
+
 /*!
- * \file    aurora_cobs.c
- * \brief   Implement an interface to code/decode COBS data
+ * \file    aurora_j2k.h
+ * \brief   Provide an interface to handle j2k packet
  * \author  Nyuu & Red
  * \version 1.0.0
  * \date    09 Sept 2017
  */
 
+#ifndef __AURORA_J2K_H
+#define __AURORA_J2K_H
+
 /* ========================================================================= */
 /* INCLUDES                                                                  */
 /* ========================================================================= */
 
-#include "aurora_cobs.h"
+#include "aurora_base.h"
+#include "aurora_serial.h"
+#include "aurora_tools.h"
 
 /* ========================================================================= */
 /* CONSTANTS                                                                 */
 /* ========================================================================= */
 
-#define FinishBlock(X) (*code_ptr = (X), code_ptr = dst++, code = 0x01)
+#define J2K_MAX_DATA_SIZE 249 /*!< SERIAL_MAX_PACKET_SIZE - 3(length, opcodes) */
 
 /* ========================================================================= */
 /* STRUCTURES & UNIONS                                                       */
 /* ========================================================================= */
 
-/* ========================================================================= */
-/* EXTERNAL FUNCTIONS (STANDARD)                                             */
-/* ========================================================================= */
+typedef struct j2k_packet_s{
+    uint8_t _length;        /* Length of the data only */
+    uint8_t _opcodes[2];    /* Opcodes */
+    uint8_t _data[J2K_MAX_DATA_SIZE]; /* Data */
+} j2k_packet_t;
 
-void AUR_cobs_EncodeBuffer(const uint8_t *ptr, uint8_t length, uint8_t *dst)
-{
-  const uint8_t *end = ptr + length;
-  uint8_t *code_ptr = dst++;
-  uint8_t code = 0x01;
+typedef struct j2k_s{
+    j2k_packet_t packet;
+} j2k_t;
 
-  while (ptr < end)
-  {
-    if (*ptr == 0)
-      FinishBlock(code);
-    else
-    {
-      *dst++ = *ptr;
-      if (++code == 0xFF)
-        FinishBlock(code);
-    }
-    ptr++;
-  }
+/*!
+ * \brief      Function to encode a j2k buffer
+ * \param[in]  opcode1          first opcode
+ * \param[in]  opcode2          second opcode
+ * \param[in]  pInputData       Pointer to the input data to encode
+ * \param[in]  length           length of the input data buffer (ONLY THE DATA)
+ * \param[out]  pOutputData      Pointer to the output buffer encoded in j2k
+ * \return     ErrorStatus, ERROR if the data could not be send, SUCCESS otherwise
+ */
+ErrorStatus AUR_j2k_EncodeData(const uint8_t opcode1, const uint8_t opcode2, const uint8_t *pInputData, const uint8_t length, uint8_t *pOutputData);
 
-  FinishBlock(code);
-}
+/*!
+ * \brief      Function to decode a j2k buffer and store the data in the j2k structure
+ * \param[in]  pInputBuffer Pointer to the input buffer to decode
+ * \param[in]  length       length of the input buffer
+ * \return     ErrorStatus, ERROR if the data could not be send, SUCCESS otherwise
+ */
+ErrorStatus AUR_j2k_DecodeBuffer(const uint8_t *pInputBuffer, const uint8_t length);
 
-ErrorStatus AUR_cobs_DecodeBuffer(Serial_t *pSerial, uint8_t *pOutputBuffer, uint8_t *length)
-{
-    uint8_t ii = 0;
-    uint8_t buffer[COBS_MAX_PACKET_SIZE];
-    uint8_t bContinue = 1;
+/*!
+ * \brief      Run action associated to the j2k opcodes.
+ * \return     None.
+ */
+void AUR_j2k_Action(void);
 
-    memset(buffer,0,COBS_MAX_PACKET_SIZE);
-    *length = 0;
-    while(bContinue) // --- wait end of COBS packet
-    {
-        if(ii >= COBS_MAX_PACKET_SIZE-2)
-            return ERROR;
-        if(AUR_rb_read(pSerial->pRingBufferRX, &buffer[ii]) == BUFFER_EMPTY)
-            return ERROR;
-        if(buffer[ii] == 0x00)
-            bContinue = 0;
-        ii++;
-    }
-
-    *length = ii;
-    AUR_cobs_UnStuff(buffer, *length, pOutputBuffer);
-    return SUCCESS;
-
-}
-
-void AUR_cobs_UnStuff(const uint8_t *ptr, uint8_t length, uint8_t *dst)
-{
-  const uint8_t *end = ptr + length;
-  int8_t i = 1;
-  while (ptr < end)
-  {
-    int code = *ptr++;
-    for (i = 1; i < code; i++)
-      *dst++ = *ptr++;
-    if (code < 0xFF)
-      *dst++ = 0;
-  }
-}
-
-
+#endif

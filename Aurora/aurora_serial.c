@@ -56,7 +56,7 @@ void AUR_serial_init(Serial_t *pSerial, UARTx_t *pUART, const UARTx_Setup_t *pSe
     pSerial->pRingBufferTX = pRingBufferTX;
     pSerial->pRingBufferRX = pRingBufferRX;
     pSerial->pUART         = pUART;
-    
+    pSerial->_isPacketWaiting = 0;
     // --- Init the TX and RX ring buffer
     AUR_rb_init(pSerial->pRingBufferTX);
     AUR_rb_init(pSerial->pRingBufferRX);
@@ -120,13 +120,8 @@ ErrorStatus AUR_serial_rawSendString(Serial_t *pSerial, uint8_t *pString)
     return SUCCESS;
 }
 
-ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pBuffer, uint8_t length)
+ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pCOBSBuffer)
 {
-    uint8_t cobsBuffer[RINGBUFFER_SIZE+2]; // COBS coding add 2 data
-    uint8_t ii = 0;
-    memset(cobsBuffer,0x00,sizeof(cobsBuffer));
-    AUR_cobsStuff(pBuffer, length, cobsBuffer);
-
     // --- TX Buffer Full ?
     UART_disableInterrupt(pSerial->pUART->pSetup->_moduleInstance, EUSCI_A_UART_TRANSMIT_INTERRUPT);
     if(AUR_rb_full(pSerial->pRingBufferTX) == BUFFER_FULL)
@@ -136,12 +131,12 @@ ErrorStatus AUR_serial_SendCOBS(Serial_t *pSerial, uint8_t *pBuffer, uint8_t len
     }
 
     // --- Write data to TX buffer
-    while(AUR_rb_full(pSerial->pRingBufferTX) == BUFFER_OK && cobsBuffer[ii])
+    while(AUR_rb_full(pSerial->pRingBufferTX) == BUFFER_OK && *pCOBSBuffer)
     {
-      AUR_rb_write(pSerial->pRingBufferTX,cobsBuffer[ii++]);
+      AUR_rb_write(pSerial->pRingBufferTX,*pCOBSBuffer++);
     }
     // --- Send the 0x00 end char for cobs packet
-    AUR_rb_write(pSerial->pRingBufferTX,cobsBuffer[ii++]);
+    AUR_rb_write(pSerial->pRingBufferTX,*pCOBSBuffer++);
     UART_enableInterrupt(pSerial->pUART->pSetup->_moduleInstance, EUSCI_A_UART_TRANSMIT_INTERRUPT);
     return SUCCESS;
 }
@@ -157,6 +152,15 @@ ErrorStatus AUR_serial_rawSendInteger(Serial_t *pSerial, int32_t value)
     return AUR_serial_rawSendBuffer(pSerial, buffer,length);
 }
 
+void AUR_serial_SetPacketWaiting(Serial_t *pSerial, uint8_t ready)
+{
+    pSerial->_isPacketWaiting = ready;
+}
+
+uint8_t AUR_serial_IsPacketWaiting(Serial_t *pSerial)
+{
+    return pSerial->_isPacketWaiting;
+}
 
 /*!
  * \brief   EUSCIA0_IRQHandler
@@ -176,6 +180,11 @@ void EUSCIA0_IRQHandler(void)
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         toRead = UART_receiveData(serialUARTA0.pUART->pSetup->_moduleInstance);
+        // --- Check if it's 0x00, the end of a COBS packet
+        if(toRead == 0x00)
+        {
+            AUR_serial_SetPacketWaiting(&serialUARTA0,1);
+        }
         // --- Add the value received to the ringBuffer, BIG endian
         AUR_rb_write(serialUARTA0.pRingBufferRX, toRead);
     }

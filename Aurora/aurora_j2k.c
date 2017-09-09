@@ -17,48 +17,66 @@
 /* ========================================================================= */
 
 /*!
- * \file    aurora.h
- * \brief   Provide an interface to handle the aurora middleware
+ * \file    aurara_j2k.c
+ * \brief   Implement an interface to handle j2k packet
  * \author  Nyuu & Red
  * \version 1.0.0
- * \date    08 July 2017
+ * \date    09 Sept 2017
  */
-
-#ifndef __AURORA_H__
-#define __AURORA_H__
 
 /* ========================================================================= */
 /* INCLUDES                                                                  */
 /* ========================================================================= */
 
-#include <ti/devices/msp432p4xx/driverlib/driverlib.h>
-#include "aurora_base.h"
 #include "aurora_j2k.h"
-#include "aurora_led.h"
-#include "aurora_ringbuffer.h"
-#include "aurora_serial.h"
-#include "aurora_servo.h"
-#include "aurora_tools.h"
-#include "aurora_uart.h"
-#include "aurora_ultrasound.h"
-#include "aurora_cobs.h"
 
+/*----------------------------------------------------------------------------*/
+/*                                > VARIABLES <                               */
+/*----------------------------------------------------------------------------*/
+static j2k_t j2k;
+Serial_t serialUARTA0;
 
-/* ========================================================================= */
-/* CONSTANTS                                                                 */
-/* ========================================================================= */
+/*----------------------------------------------------------------------------*/
+/*                                > FUNCTIONS <                               */
+/*----------------------------------------------------------------------------*/
 
+ErrorStatus AUR_j2k_EncodeData(const uint8_t opcode1, const uint8_t opcode2, const uint8_t *pInputData, const uint8_t length, uint8_t *pOutputData)
+{
+    uint8_t ii = 0;
 
+    if(!length)
+        return ERROR;
 
-/* ========================================================================= */
-/* PROTOTYPES                                                                */
-/* ========================================================================= */
+    pOutputData[0] = length;
+    pOutputData[1] = opcode1;
+    pOutputData[2] = opcode2;
 
-/*!
- * \brief      Function initialize the aurora middleware
- * \return     None.
- */
-void AUR_init(void);
+    for(ii = 3; ii < length+3; ii++)
+    {
+        pOutputData[ii] = pInputData[ii-3];
+    }
+    return SUCCESS;
+}
 
+ErrorStatus AUR_j2k_DecodeBuffer(const uint8_t *pInputBuffer, const uint8_t length)
+{
+    uint8_t ii = 0;
 
-#endif /* __AURORA_H__ */
+    if(!length)
+            return ERROR;
+
+    j2k.packet._length = pInputBuffer[0];
+    j2k.packet._opcodes[0] = pInputBuffer[1];
+    j2k.packet._opcodes[1] = pInputBuffer[2];
+    for(ii = 3; ii < length; ii++)
+    {
+        j2k.packet._data[ii-3] = pInputBuffer[ii];
+    }
+    return SUCCESS;
+}
+
+void AUR_j2k_Action(void)
+{
+    __delay_cycles(40000);
+    // TODO
+}

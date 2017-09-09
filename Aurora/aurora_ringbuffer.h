@@ -39,7 +39,7 @@
 /* CONSTANTS                                                                 */
 /* ========================================================================= */
 
-#define RINGBUFFER_SIZE 128 /*!< RingBuffer size, must be a power of two */
+#define RINGBUFFER_SIZE 512 /*!< RingBuffer size, must be a power of two */
 
 /* ========================================================================= */
 /* STRUCTURES & UNIONS                                                       */
