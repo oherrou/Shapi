@@ -62,7 +62,7 @@ const Timer_A_CaptureModeConfig captureModeConfig =
 
 /* distance measured from the ultrasound  */
 uint16_t us_distance[US_NB_SAMPLE] = {0};
-
+uint16_t us_curDistance = 0;
 /* ========================================================================= */
 /* EXTERNAL FUNCTIONS (STANDARD)                                             */
 /* ========================================================================= */
@@ -115,7 +115,7 @@ uint16_t AUR_us_getFilteredDistance(void)
 
 uint16_t AUR_us_getDistance(void)
 {
-    return us_distance[0];
+    return us_curDistance;
 }
 
 void TA1_N_IRQHandler(void)
@@ -123,18 +123,40 @@ void TA1_N_IRQHandler(void)
     static uint16_t meas1 = 0;
     static uint16_t meas2 = 0;
 
-    Timer_A_clearCaptureCompareInterrupt(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+    /* Any access, read or write, of the TA->IV register automatically resets the
+    highest "pending" interrupt flag. */
+    switch(TIMER_A1->IV)
+    {
+        case  0: break;                          // No interrupt
+        case  2:                  // CCR1
+            if(US_ECHO_INPORT&US_ECHO_PIN) // Start
+                {
+                    meas1 = Timer_A_getCaptureCompareCount(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+                }
+                else
+                {
+                    meas2 = Timer_A_getCaptureCompareCount(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+                    if(meas2>meas1)
+                        us_curDistance = (meas2 - meas1)/58;
+                    else
+                        us_curDistance = (meas1 - meas2)/58;
+                    if(us_curDistance > US_MAX_DISTANCE)
+                        us_curDistance = US_MAX_DISTANCE;
+                }
 
-    if(US_ECHO_INPORT&US_ECHO_PIN) // Start
-    {
-        meas1 = Timer_A_getCaptureCompareCount(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+                Timer_A_clearCaptureCompareInterrupt(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+        break;
+        case  4: break; // CCR2 not used
+
+        case  6: break; // CCR3 not used
+        case  8: break; // CCR4 not used
+        case 10: break; // CCR5 not used
+        case 12: break; // CCR6 not used
+        case 14: break; // overflow not used
+        default: break;
     }
-    else
-    {
-        meas2 = Timer_A_getCaptureCompareCount(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
-        if(meas2>meas1)
-            us_distance[0] = (meas2 - meas1)/58;
-        else
-            us_distance[0] = (meas1 - meas2)/58;
-    }
+
+
+
+
 }

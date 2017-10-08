@@ -17,55 +17,80 @@
 /* ========================================================================= */
 
 /*!
- * \file    aurora_ultrasound.h
- * \brief   Provide an interface to handle the HC-SR01 Ultrasound
+ * \file    motor.h
+ * \brief   Implement an interface to handle a group of motor
  * \author  Nyuu & Red
+ * \note    This modules uses TimerA0 to generate the PWM, SMCLK must be
+ *          clocked at 20MHz
  * \version 1.0.0
- * \date    08 July 2017
+ * \date    29 April 2017
  */
-
-#ifndef __AURORA_ULTRASOUND_H
-#define __AURORA_ULTRASOUND_H
-
 /* ========================================================================= */
 /* INCLUDES                                                                  */
 /* ========================================================================= */
 
-#include "aurora_base.h"
-#include "aurora_tools.h"
+#include "motor.h"
+
 
 /* ========================================================================= */
-/* CONSTANTS                                                                 */
+/* INTERNAL                                                                  */
 /* ========================================================================= */
 
-#define US_NB_SAMPLE 5 // MUST BE 5, median value computation is optimized for 5
-#define US_MAX_DISTANCE 60 // In cm
+static MotorNode_Setup_t MotorBack_Setup ={
+    ._pwmPort = GPIO_PORT_P2,
+    ._pwmPin = GPIO_PIN4,
+    ._in1Port = GPIO_PORT_P5,
+    ._in1Pin = GPIO_PIN0,
+    ._in2Port = GPIO_PORT_P5,
+    ._in2Pin = GPIO_PIN1,
+   ._MOTOR_TA0CCRx = MOTOR_TA0CCR1,
+    ._MOTOR_TA0CCTLx =  MOTOR_TA0CCTL1
+};
+
+static MotorNode_Setup_t MotorFront_Setup ={
+
+    ._pwmPort = GPIO_PORT_P2,
+    ._pwmPin = GPIO_PIN4,
+    ._in1Port = GPIO_PORT_P5,
+    ._in1Pin = GPIO_PIN0,
+    ._in2Port = GPIO_PORT_P5,
+    ._in2Pin = GPIO_PIN1,
+   ._MOTOR_TA0CCRx = MOTOR_TA0CCR2,
+    ._MOTOR_TA0CCTLx =   MOTOR_TA0CCTL2
+};
+
+static Motor_t Motors;
+
 /* ========================================================================= */
-/* PROTOTYPES                                                                */
+/* FUNCTIONS                                                                 */
 /* ========================================================================= */
 
-/*!
- * \brief      Function initialize the ultrasound
- * \return     None.
- */
-void AUR_us_init(void);
 
-/*!
- * \brief      Function to retrieve the distance measure by the ultrasound
- * \return     The distance measured by the ultrasound
- */
-uint16_t AUR_us_getDistance(void);
 
-/*!
- * \brief      Function to create an impulsion on the TRIG pin of the ultrasound
- * \return     None.
- */
-void AUR_us_trigger(void);
+void Motor_Init(void)
+{
+    MotorNode_Init();
+    Motors.arrMotor[MOTOR_BACK] = MotorNode_Create(&MotorBack_Setup);
+    Motors.arrMotor[MOTOR_FRONT]= MotorNode_Create(&MotorFront_Setup);
+}
 
-/*!
- * \brief      Function to retrieve the filtered distance measured of the ultrasound
- * \return     The distance measured by the ultrasound
- */
-uint16_t AUR_us_getFilteredDistance(void);
+void Motor_SetPWM(MotorName mot, uint8_t pwm)
+{
+   MotorNode_SetPWM(&Motors.arrMotor[mot],pwm);
+}
 
-#endif /* __AURORA_ULTRASOUND_H */
+void Motor_SetDirection(MotorName mot, MotorDirection direction)
+{
+    MotorNode_SetDirection(&Motors.arrMotor[mot],direction);
+}
+
+uint8_t Motor_GetPWM(MotorName mot)
+{
+    return MotorNode_GetPWM(&Motors.arrMotor[mot]);
+}
+
+MotorDirection Motor_GetDirection(MotorName mot)
+{
+    return MotorNode_GetDirection(&Motors.arrMotor[mot]);
+}
+

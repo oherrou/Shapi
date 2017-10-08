@@ -1,6 +1,6 @@
 /* ========================================================================= */
-/* Aurora - MSP432 Library                                                   */
-/* Copyright (C) 2017 Nyuu & Red                                             */
+/* Shapi                                                 */
+/* Copyright (C) 2017 Nyuu / Redfox                                          */
 /*                                                                           */
 /* This program is free software: you can redistribute it and/or modify      */
 /* it under the terms of the GNU General Public License as published by      */
@@ -17,55 +17,47 @@
 /* ========================================================================= */
 
 /*!
- * \file    aurora_ultrasound.h
- * \brief   Provide an interface to handle the HC-SR01 Ultrasound
- * \author  Nyuu & Red
- * \version 1.0.0
- * \date    08 July 2017
+ * \file    robot_head.h
+ * \brief   Provide functions to handle the robot head (ultrasound + servo)
+ * \author  Nyuu & Redfox
+ * \version 1.0
+ * \date    10 Sept 2017
  */
 
-#ifndef __AURORA_ULTRASOUND_H
-#define __AURORA_ULTRASOUND_H
-
-/* ========================================================================= */
-/* INCLUDES                                                                  */
 /* ========================================================================= */
 
-#include "aurora_base.h"
-#include "aurora_tools.h"
+#ifndef __ROBOT_HEAD_H__
+#define __ROBOT_HEAD_H__
 
 /* ========================================================================= */
-/* CONSTANTS                                                                 */
+/* INCLUDE SECTION                                                           */
 /* ========================================================================= */
 
-#define US_NB_SAMPLE 5 // MUST BE 5, median value computation is optimized for 5
-#define US_MAX_DISTANCE 60 // In cm
+#include "robot_base.h"
+#include "aurora.h"
+
 /* ========================================================================= */
-/* PROTOTYPES                                                                */
+/* STRUCTURES & UNIONS                                                       */
 /* ========================================================================= */
 
-/*!
- * \brief      Function initialize the ultrasound
- * \return     None.
- */
-void AUR_us_init(void);
+/*! Handle a the robot head                                                  */
+typedef struct Head_s
+{
+    uint8_t     _angle;
+    uint16_t    _distance;
+} Head_t;
 
-/*!
- * \brief      Function to retrieve the distance measure by the ultrasound
- * \return     The distance measured by the ultrasound
- */
-uint16_t AUR_us_getDistance(void);
+#define OPCODE_US_SERVO_DISTANCE 0x10
 
-/*!
- * \brief      Function to create an impulsion on the TRIG pin of the ultrasound
- * \return     None.
- */
-void AUR_us_trigger(void);
+/* ========================================================================= */
+/* PROTOTYPE SECTION                                                         */
+/* ========================================================================= */
 
-/*!
- * \brief      Function to retrieve the filtered distance measured of the ultrasound
- * \return     The distance measured by the ultrasound
- */
-uint16_t AUR_us_getFilteredDistance(void);
+void ROB_head_MeasureAtAngle(Head_t *pHead, uint8_t angle);
+void ROB_head_SendDataCOBS(Head_t *pHead, Serial_t *pSerial);
 
-#endif /* __AURORA_ULTRASOUND_H */
+/* ========================================================================= */
+
+#endif /* __ROBOT_HEAD_H__ */
+
+/* ========================================================================= */

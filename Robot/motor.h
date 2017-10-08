@@ -16,56 +16,91 @@
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>.     */
 /* ========================================================================= */
 
+
 /*!
- * \file    aurora_ultrasound.h
- * \brief   Provide an interface to handle the HC-SR01 Ultrasound
+ * \file    motor.h
+ * \brief   Provide an interface to handle a group of motor
  * \author  Nyuu & Red
+ * \note    This modules uses TimerA0 to generate the PWM, SMCLK must be
+ *          clocked at 20MHz
  * \version 1.0.0
- * \date    08 July 2017
+ * \date    29 April 2017
  */
 
-#ifndef __AURORA_ULTRASOUND_H
-#define __AURORA_ULTRASOUND_H
+#ifndef __MOTOR_H
+#define __MOTOR_H
 
 /* ========================================================================= */
 /* INCLUDES                                                                  */
 /* ========================================================================= */
 
-#include "aurora_base.h"
-#include "aurora_tools.h"
+#include <stdint.h>
+#include "motorNode.h"
 
 /* ========================================================================= */
 /* CONSTANTS                                                                 */
 /* ========================================================================= */
 
-#define US_NB_SAMPLE 5 // MUST BE 5, median value computation is optimized for 5
-#define US_MAX_DISTANCE 60 // In cm
+/* ========================================================================= */
+/* STRUCTURES & UNIONS                                                       */
+/* ========================================================================= */
+
+
+/*! Enumerates the Motor Names                                               */
+typedef enum {MOTOR_BACK, MOTOR_FRONT, MOTOR_NB} MotorName;
+
+/*! Handle the group of motor                                                */
+typedef struct Motor_s{
+    MotorNode_t     arrMotor[MOTOR_NB];
+    //Add direction génerale des moteurs et donc du robot
+} Motor_t;
+
+
+
 /* ========================================================================= */
 /* PROTOTYPES                                                                */
 /* ========================================================================= */
 
-/*!
- * \brief      Function initialize the ultrasound
- * \return     None.
- */
-void AUR_us_init(void);
 
 /*!
- * \brief      Function to retrieve the distance measure by the ultrasound
- * \return     The distance measured by the ultrasound
+ * \brief      Create and initialize a motor
+
+ * \return    Nothing
  */
-uint16_t AUR_us_getDistance(void);
+void Motor_Init(void);
 
 /*!
- * \brief      Function to create an impulsion on the TRIG pin of the ultrasound
- * \return     None.
+ * \brief      Set the PWM of a motor
+ * \param[in]  mot  the motor name
+ * \param[in]  pwm  the pwm value
+ *
+ * \return     Nothing
  */
-void AUR_us_trigger(void);
+void Motor_SetPWM(MotorName mot, uint8_t pwm);
 
 /*!
- * \brief      Function to retrieve the filtered distance measured of the ultrasound
- * \return     The distance measured by the ultrasound
+ * \brief      Set the direction of a motor
+ * \param[in]  mot          the motor name
+ * \param[in]  direction    the direction
+ *
+ * \return     Nothing
  */
-uint16_t AUR_us_getFilteredDistance(void);
+void Motor_SetDirection(MotorName mot, MotorDirection direction);
 
-#endif /* __AURORA_ULTRASOUND_H */
+/*!
+ * \brief      Get the PWM of a motor
+ * \param[in]  mot          the motor name
+ *
+ * \return     The pwm value
+ */
+uint8_t Motor_GetPWM(MotorName mot);
+
+/*!
+ * \brief      Get the direction of a motor
+ * \param[in]  mot          the motor name
+ *
+ * \return     The direction
+ */
+MotorDirection Motor_GetDirection(MotorName mot);
+
+#endif /* __MOTOR_H */
